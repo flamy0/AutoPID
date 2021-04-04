@@ -35,7 +35,6 @@ void AutoPID::setTimeStep(unsigned long timeStep){
   _timeStep = timeStep;
 }
 
-
 bool AutoPID::atSetPoint(double threshold) {
   return abs(*_setpoint - *_input) <= threshold;
 }//bool AutoPID::atSetPoint
@@ -45,6 +44,9 @@ void AutoPID::run() {
     _stopped = false;
     reset();
   }
+  
+  if(!_paused) {
+  
   //if bang thresholds are defined and we're outside of them, use bang-bang control
   if (_bangOn && ((*_setpoint - *_input) > _bangOn)) {
     *_output = _outputMax;
@@ -56,17 +58,47 @@ void AutoPID::run() {
     unsigned long _dT = millis() - _lastStep;   //calculate time since last update
     if (_dT >= _timeStep) {                     //if long enough, do PID calculations
       _lastStep = millis();
+	  _ran = true;
       double _error = *_setpoint - *_input;
+	  //Serial.print("Error: ");
+	  //Serial.println(_error);
       _integral += (_error + _previousError) / 2 * _dT / 1000.0;   //Riemann sum integral
-      //_integral = constrain(_integral, _outputMin/_Ki, _outputMax/_Ki);
-      double _dError = (_error - _previousError) / _dT / 1000.0;   //derivative
+	  //_integral = constrain(_integral, _outputMin/_Ki, _outputMax/_Ki);
+      //Serial.print("Integral: ");
+	  //Serial.println(_integral);
+	  double _dError = (_error - _previousError) / _dT / 1000.0;   //derivative
+	  //Serial.print("dError: ");
+	  //Serial.println(_dError);
       _previousError = _error;
       double PID = (_Kp * _error) + (_Ki * _integral) + (_Kd * _dError);
-      //*_output = _outputMin + (constrain(PID, 0, 1) * (_outputMax - _outputMin));
+	  Serial.print(*_input);
+	  Serial.print(",");
+	  Serial.print(_Kp);
+	  Serial.print(",");
+	  Serial.print(_Ki);
+	  Serial.print(",");
+	  Serial.print(_Kd);
+	  //Serial.print(",");
+	  //Serial.print(_error);Serial.print(",");Serial.print(_integral);Serial.print(",");Serial.print(_dError);
+	  Serial.print(",");
+      Serial.println(PID);
+	  //*_output = _outputMin + (constrain(PID, 0, 1) * (_outputMax - _outputMin));
       *_output = constrain(PID, _outputMin, _outputMax);
+	  //*_output = 50;
     }
   }
+  
+  }
 }//void AutoPID::run
+
+void AutoPID::pause() {
+  _paused = true;
+}
+
+void AutoPID::unpause() {
+  _lastStep = millis();
+  _paused = false;
+}
 
 void AutoPID::stop() {
   _stopped = true;
@@ -78,8 +110,20 @@ void AutoPID::reset() {
   _previousError = 0;
 }
 
+bool AutoPID::isPaused(){
+  return _paused;
+}
+
 bool AutoPID::isStopped(){
   return _stopped;
+}
+
+bool AutoPID::hasRun(){
+  if(_ran == true) {
+    _ran = false;
+    return true;
+  }
+  return false;
 }
 
 double AutoPID::getIntegral(){

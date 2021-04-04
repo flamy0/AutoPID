@@ -23,22 +23,26 @@ class AutoPID {
     // Runs PID calculations when needed. Should be called repeatedly in loop.
     // Automatically reads input and sets output via pointers
     void run();
-    // Stops PID functionality, output sets to 
+	void pause();
+	void unpause();
+	// Stops PID functionality, output sets to 
     void stop();
     void reset();
+    bool isPaused();
     bool isStopped();
+	bool hasRun();
 
     double getIntegral();
     void setIntegral(double integral);
 
   private:
     double _Kp, _Ki, _Kd;
-    double _integral, _previousError;
+    double _integral=0, _previousError=0;
     double _bangOn, _bangOff;
     double *_input, *_setpoint, *_output;
     double _outputMin, _outputMax;
     unsigned long _timeStep, _lastStep;
-    bool _stopped;
+    bool _paused=false, _stopped=true, _ran=false;
 
 };//class AutoPID
 
